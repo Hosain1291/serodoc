@@ -8,16 +8,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
     <style>
         /* 기본 웹폰트 정의 */
-        @font-face { font-family: 'Sangjang'; src: url('상장체B-Bold.woff') format('woff'); }
+        @font-face { 
+            font-family: 'Sangjang'; 
+            src: url('상장체B-Bold.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
         @font-face { font-family: 'Dobong'; src: url('dobonghan-Medium.woff') format('woff'); }
         @font-face { font-family: 'Jinin'; src: url('Jinin-B.woff') format('woff'); }
         @font-face { font-family: 'Gaehangro'; src: url('Gaehangro-H.woff') format('woff'); }
         @font-face { font-family: 'Song'; src: url('Song-B.woff') format('woff'); }
+        /* 잘난체 삭제됨 */
         @font-face { font-family: 'Solmoe'; src: url('SolmoeKimDaeGeonhan-Medium.woff') format('woff'); }
 
         /* UI 스타일 - 레트로 DOS/Windows 95 스타일 */
         body {
-            background-color: #008080; /* 고전적인 파란 배경 */
+            background-color: #000080; /* 고전적인 파란 배경 */
             color: #fff;
             font-family: 'Gulim', 'Malgun Gothic', sans-serif;
             display: flex;
@@ -222,8 +228,9 @@
         .punct {
             display: inline-block;
             position: relative;
-            top: -0.45em; 
-            margin-bottom: -0.45em; 
+            /* 점 위치 미세 조정: 너무 과하게 붙지 않도록 수정 */
+            top: -0.35em; 
+            margin-bottom: -0.35em; 
         }
 
         #topLogo {
@@ -332,6 +339,7 @@
                     <option value="'Jinin', 'Gungsuh', serif">지닌체 (붓글씨)</option>
                     <option value="'Dobong', sans-serif">도봉옛길</option>
                     <option value="'Gaehangro', sans-serif">개항로</option>
+                    <!-- 잘난체 옵션 삭제 -->
                 </select>
             </div>
             
@@ -392,7 +400,7 @@
             </div>
             
             <div id="textStampInput" class="control-group">
-                <label>이름 (2~4글자):</label>
+                <label>이름 (2~6글자):</label>
                 <input type="text" id="stampText" value="홍길동인" maxlength="6">
                 <label>도장 색상:</label>
                 <input type="color" id="stampColor" value="#cc0000">
@@ -744,7 +752,7 @@
             htmlToImage.toPng(paper)
                 .then(function (dataUrl) {
                     var link = document.createElement('a');
-                    link.download = '문서.png';
+                    link.download = '나만의_서찰_상장.png';
                     link.href = dataUrl;
                     link.click();
                     delBtns.forEach(b => b.style.display = '');
@@ -760,5 +768,3 @@
     </script>
 </body>
 </html>
-
-
