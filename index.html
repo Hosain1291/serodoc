@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세로쓰기 문서 생성기 (도장/커스텀폰트)</title>
+    <!-- html2canvas 대신 html-to-image 라이브러리 사용 (세로쓰기 지원) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <style>
+        /* 기본 웹폰트 정의 */
+        @font-face { font-family: 'Sangjang'; src: url('상장체B-Bold.woff') format('woff'); }
+        @font-face { font-family: 'Dobong'; src: url('dobonghan-Medium.woff') format('woff'); }
+        @font-face { font-family: 'Jinin'; src: url('Jinin-B.woff') format('woff'); }
+        @font-face { font-family: 'Gaehangro'; src: url('Gaehangro-H.woff') format('woff'); }
+        @font-face { font-family: 'Song'; src: url('Song-B.woff') format('woff'); }
+        @font-face { font-family: 'Jalnan'; src: url('Jalnan-Regular.woff') format('woff'); }
+        @font-face { font-family: 'Solmoe'; src: url('SolmoeKimDaeGeonhan-Medium.woff') format('woff'); }
+
+        /* UI 스타일 */
+        body {
+            background-color: #2b2b2b;
+            color: #eee;
+            font-family: 'Malgun Gothic', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 { margin-bottom: 20px; text-shadow: 2px 2px 4px #000; }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* 컨트롤 패널 */
+        .controls {
+            background: #444;
+            padding: 20px;
+            border-radius: 8px;
+            color: #fff;
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            border-bottom: 1px solid #777;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            margin-top: 10px;
+            color: #ffcc00;
+        }
+
+        .control-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px; }
+        label { font-size: 0.9em; color: #ccc; }
+        
+        /* 입력창(textarea) 스타일 */
+        textarea {
+            width: 100%; 
+            height: 150px; 
+            padding: 10px;
+            background: #333; 
+            color: #fff; 
+            border: 1px solid #555;
+            border-radius: 4px; 
+            resize: vertical; 
+            font-size: 16px;
+            line-height: 1.6;
+            writing-mode: horizontal-tb !important;
+            text-orientation: mixed !important;
+        }
+
+        input[type="text"], select, input[type="file"], input[type="range"], input[type="color"] {
+            width: 100%; padding: 8px;
+            background: #333; color: #fff; border: 1px solid #555;
+            border-radius: 4px; box-sizing: border-box;
+        }
+
+        /* 체크박스 스타일 */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #555;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        button {
+            background: #5a5a5a; color: white; border: none;
+            padding: 10px; border-radius: 4px; cursor: pointer;
+            font-weight: bold; transition: background 0.2s; margin-top: 5px;
+        }
+        button:hover { background: #777; }
+        button.primary { background: #007bff; }
+        button.primary:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.warning { background: #ffc107; color: #333; }
+        button.success { background: #28a745; }
+
+        /* 미리보기 영역 */
+        .preview-wrapper {
+            background: #555;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto; 
+            max-width: calc(100vw - 400px);
+            min-width: 500px;
+            display: flex;
+            direction: rtl; 
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* 종이 스타일 */
+        #paper {
+            position: relative; 
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            direction: ltr; /* 글자 뒤집힘 방지 */
+            text-align: left;
+            
+            height: 700px; 
+            width: fit-content; 
+            min-width: 400px;
+            
+            background-color: #f4e4bc;
+            color: #000;
+            
+            /* [수정] 기본 여백 (로고 없을 때) */
+            padding: 70px 60px 60px 60px;
+            box-sizing: border-box;
+            
+            font-family: 'Solmoe', 'Gungsuh', 'Batang', serif;
+            font-size: 28px;
+            line-height: 1.8;
+            
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            white-space: pre-wrap;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            
+            transition: padding 0.3s ease, border 0.3s;
+        }
+        
+        /* [추가] 로고가 있을 때 적용되는 클래스 */
+        #paper.has-logo {
+            padding-top: 170px; /* 로고 높이(약 100px) + 여백 확보 */
+        }
+        
+        /* 상장 테두리 스타일 */
+        #paper.certificate-mode {
+            border: 10px double #daa520; /* 금색 이중 테두리 */
+            outline: 2px solid #daa520;
+            outline-offset: -20px; /* 안쪽 라인 */
+        }
+
+        #paper p { margin: 0; white-space: pre-wrap; }
+
+        /* 문장 부호(점) 위치 보정 스타일 */
+        .punct {
+            display: inline-block;
+            position: relative;
+            top: -0.45em; 
+            margin-bottom: -0.45em; 
+        }
+
+        /* 상단 중앙 로고 스타일 */
+        #topLogo {
+            position: absolute;
+            top: 25px; /* 테두리 안쪽 적당한 위치 */
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 100px;
+            max-height: 100px;
+            opacity: 0.9;
+            pointer-events: none; 
+            z-index: 5;
+        }
+
+        /* 도장 스타일 */
+        .stamp {
+            position: absolute;
+            z-index: 10;
+            cursor: move;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: 'Hanja', 'Gungsuh', serif; 
+            box-sizing: border-box;
+            line-height: 1.2;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            mix-blend-mode: multiply; 
+            direction: ltr;
+        }
+
+        /* [수정] 이미지 도장: 그림자 제거 */
+        .stamp.image {
+            box-shadow: none;
+        }
+
+        .stamp.square {
+            border-style: solid;
+            border-width: 4px;
+            writing-mode: vertical-rl; 
+        }
+
+        .stamp.circle {
+            border-style: solid;
+            border-width: 4px;
+            border-radius: 50%;
+            writing-mode: vertical-rl;
+        }
+
+        .stamp img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none; 
+        }
+
+        .stamp:active { opacity: 0.8; cursor: grabbing; }
+
+        .stamp .delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            border: 1px solid white;
+            z-index: 100;
+        }
+        .stamp:hover .delete-btn { display: block; }
+
+        @media (max-width: 800px) {
+            .preview-wrapper { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>세로쓰기 서찰 생성기 (상장/완전판)</h1>
+
+    <div class="container">
+        <!-- 설정 패널 -->
+        <div class="controls">
+            
+            <div class="section-title">1. 글쓰기 & 폰트</div>
+            <div class="control-group">
+                <textarea id="textInput" placeholder="이곳에 내용을 입력하세요. 오른쪽 종이에 세로로 나타납니다.">
+상 장
+
+성명: 홍길동
+부문: 세로쓰기
+
+위 사람은 세로쓰기 기능을
+훌륭하게 활용하였기에
+이 상장을 수여합니다.
+
+2024년 5월 20일
+개발자 드림</textarea>
+            </div>
+
+            <div class="control-group">
+                <label>글씨체 선택:</label>
+                <select id="fontSelect">
+                    <option value="'Sangjang', serif">상장체 (상장 추천)</option>
+                    <option value="'Solmoe', 'Gungsuh', serif">솔뫼 김대건</option>
+                    <option value="'Jinin', 'Gungsuh', serif">지닌체 (붓글씨)</option>
+                    <option value="'Dobong', sans-serif">도봉옛길</option>
+                    <option value="'Gaehangro', sans-serif">개항로</option>
+                    <option value="'Jalnan', sans-serif">잘난체</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label>📂 내 폰트 파일 추가 (.ttf, .woff):</label>
+                <input type="file" id="customFontFile" accept=".ttf, .otf, .woff, .woff2">
+            </div>
+
+            <div class="control-group">
+                <label>글자 크기 / 줄 간격:</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="range" id="fontSize" min="16" max="60" value="28" style="flex:1">
+                    <input type="range" id="lineHeight" min="10" max="30" value="18" style="flex:1">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>글자 색상:</label>
+                <input type="color" id="textColor" value="#000000">
+            </div>
+
+            <div class="section-title">2. 상장 및 배경 설정</div>
+            <div class="control-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="certificateMode">
+                    <label for="certificateMode">🏆 상장 테두리 적용</label>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>🖼️ 상단 중앙 로고/마크:</label>
+                <input type="file" id="logoImageFile" accept="image/*">
+            </div>
+
+            <div class="control-group">
+                <label>종이 색상:</label>
+                <input type="color" id="bgColor" value="#f4e4bc">
+            </div>
+            
+            <div class="control-group">
+                <label>종이 높이 (문서 길이):</label>
+                <input type="range" id="paperHeight" min="400" max="1500" value="700">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="autoHeightCheck">
+                <label for="autoHeightCheck">세로 길이 자동 확장</label>
+            </div>
+
+            <div class="section-title">3. 도장(낙관) 찍기</div>
+            <div class="control-group">
+                <label>도장 종류:</label>
+                <select id="stampType">
+                    <option value="square">네모 도장 (이름)</option>
+                    <option value="circle">원형 도장 (이름)</option>
+                    <option value="image">사진/이미지 업로드</option>
+                </select>
+            </div>
+            
+            <div id="textStampInput" class="control-group">
+                <label>이름 (2~4글자 추천):</label>
+                <input type="text" id="stampText" value="홍길동인" maxlength="6">
+                <label>도장 색상:</label>
+                <input type="color" id="stampColor" value="#cc0000">
+            </div>
+
+            <div id="imageStampInput" class="control-group" style="display:none;">
+                <label>도장 이미지 파일:</label>
+                <input type="file" id="stampImageFile" accept="image/*">
+            </div>
+
+            <button onclick="addStamp()" style="background:#8b4513;">🧧 도장 찍기 (생성)</button>
+            
+            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                <button onclick="alignStamp('center')" class="success" style="flex:1;">◎ 중앙 정렬</button>
+                <button onclick="alignStamp('bottom')" class="success" style="flex:1;">↓ 하단 정렬</button>
+            </div>
+
+            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                <button id="undoStampBtn" class="warning" style="flex:1;">↩️ 방금 취소</button>
+                <button id="clearStampsBtn" class="danger" style="flex:1;">🗑️ 모두 삭제</button>
+            </div>
+
+
+            <div class="section-title">4. 저장</div>
+            <button id="saveBtn" class="primary">📸 전체 이미지(PNG) 저장</button>
+        </div>
+
+        <!-- 결과물 미리보기 -->
+        <div class="preview-wrapper" id="previewWrapper">
+            <div id="paper">
+                <!-- 로고 이미지가 들어갈 공간 -->
+                <img id="topLogo" style="display:none;">
+                
+                <span id="contentArea">
+                    상 장.<br><br>성명: 홍길동<br>부문: 세로쓰기<br><br>위 사람은 세로쓰기 기능을<br>훌륭하게 활용하였기에<br>이 상장을 수여합니다.<br><br>2024년 5월 20일<br>개발자 드림
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const paper = document.getElementById('paper');
+        const contentArea = document.getElementById('contentArea');
+        const bgColor = document.getElementById('bgColor');
+        const fontSize = document.getElementById('fontSize');
+        const lineHeight = document.getElementById('lineHeight');
+        const paperHeight = document.getElementById('paperHeight');
+        const autoHeightCheck = document.getElementById('autoHeightCheck');
+        const fontSelect = document.getElementById('fontSelect');
+        const customFontFile = document.getElementById('customFontFile');
+        const textColor = document.getElementById('textColor');
+        const certificateMode = document.getElementById('certificateMode');
+        const logoImageFile = document.getElementById('logoImageFile');
+        const topLogo = document.getElementById('topLogo');
+        const saveBtn = document.getElementById('saveBtn');
+        
+        const stampType = document.getElementById('stampType');
+        const textStampInput = document.getElementById('textStampInput');
+        const imageStampInput = document.getElementById('imageStampInput');
+        const stampText = document.getElementById('stampText');
+        const stampColor = document.getElementById('stampColor');
+        const stampImageFile = document.getElementById('stampImageFile');
+        const undoStampBtn = document.getElementById('undoStampBtn');
+        const clearStampsBtn = document.getElementById('clearStampsBtn');
+
+        let stampHistory = [];
+
+        function updateText() {
+            let val = textInput.value;
+            // 특수문자 전각 변환 및 위치 보정
+            val = val.replace(/\./g, '．')
+                     .replace(/,/g, '，')
+                     .replace(/!/g, '！')
+                     .replace(/\?/g, '？');
+
+            val = val.replace(/([．，！？])/g, '<span class="punct">$1</span>');
+
+            contentArea.innerHTML = val.replace(/\n/g, '<br>');
+        }
+
+        textInput.addEventListener('input', updateText);
+
+        bgColor.addEventListener('input', (e) => paper.style.backgroundColor = e.target.value);
+        fontSize.addEventListener('input', (e) => paper.style.fontSize = e.target.value + 'px');
+        lineHeight.addEventListener('input', (e) => paper.style.lineHeight = e.target.value / 10);
+        textColor.addEventListener('input', (e) => paper.style.color = e.target.value);
+        
+        // 종이 높이 조절 로직
+        paperHeight.addEventListener('input', (e) => {
+            if (!autoHeightCheck.checked) {
+                paper.style.height = e.target.value + 'px';
+            }
+        });
+
+        autoHeightCheck.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                paper.style.height = 'auto'; 
+                paper.style.minHeight = '700px';
+                paperHeight.disabled = true;
+            } else {
+                paper.style.height = paperHeight.value + 'px';
+                paper.style.minHeight = '';
+                paperHeight.disabled = false;
+            }
+        });
+
+        fontSelect.addEventListener('change', (e) => paper.style.fontFamily = e.target.value);
+
+        // 상장 테두리 모드
+        certificateMode.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                paper.classList.add('certificate-mode');
+            } else {
+                paper.classList.remove('certificate-mode');
+            }
+        });
+
+        // 상단 중앙 로고 업로드
+        logoImageFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                topLogo.style.display = 'none';
+                paper.classList.remove('has-logo'); // 로고 없음 -> 여백 원상복구
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                topLogo.src = e.target.result;
+                topLogo.style.display = 'block';
+                paper.classList.add('has-logo'); // 로고 있음 -> 여백 늘리기
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 커스텀 폰트 로딩 개선
+        customFontFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fontData = e.target.result;
+                const fontName = 'CustomFont_' + Date.now();
+                const style = document.createElement('style');
+                style.textContent = `
+                    @font-face {
+                        font-family: '${fontName}';
+                        src: url('${fontData}');
+                    }
+                `;
+                document.head.appendChild(style);
+                const option = document.createElement('option');
+                option.value = fontName;
+                option.text = "📂 " + file.name;
+                fontSelect.add(option, 0);
+                fontSelect.value = fontName;
+                paper.style.fontFamily = fontName;
+                alert('폰트가 적용되었습니다!');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        stampType.addEventListener('change', function() {
+            if (this.value === 'image') {
+                textStampInput.style.display = 'none';
+                imageStampInput.style.display = 'flex';
+            } else {
+                textStampInput.style.display = 'flex';
+                imageStampInput.style.display = 'none';
+            }
+        });
+
+        function addStamp() {
+            const type = stampType.value;
+            const div = document.createElement('div');
+            div.className = `stamp ${type}`;
+            div.setAttribute('tabindex', '0'); // 포커스 가능하게 설정
+            
+            const delBtn = document.createElement('div');
+            delBtn.className = 'delete-btn';
+            delBtn.innerText = 'X';
+            delBtn.onclick = function(e) { e.stopPropagation(); div.remove(); };
+            div.appendChild(delBtn);
+
+            div.ondblclick = function(e) { e.stopPropagation(); div.remove(); };
+            
+            // 클릭 시 선택 효과 (테두리 등)
+            div.addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.querySelectorAll('.stamp').forEach(s => s.style.outline = 'none');
+                div.style.outline = '2px dashed blue';
+                // 선택된 도장 전역 변수에 저장하여 정렬 기능에 사용
+                window.selectedStamp = div;
+            });
+
+            div.style.top = (200 + Math.random() * 50) + 'px';
+            div.style.right = (50 + Math.random() * 50) + 'px'; 
+            div.style.left = 'auto'; // 초기화
+            
+            if (type === 'image') {
+                const file = stampImageFile.files[0];
+                if (!file) { alert('이미지 파일을 선택해주세요.'); return; }
+                const img = document.createElement('img');
+                const reader = new FileReader();
+                reader.onload = function(e) { img.src = e.target.result; };
+                reader.readAsDataURL(file);
+                div.style.width = '80px';
+                div.style.height = '80px';
+                div.style.border = 'none'; 
+                div.appendChild(img);
+            } else {
+                const txt = stampText.value;
+                if (!txt) { alert('도장에 들어갈 이름을 입력하세요.'); return; }
+                div.style.color = stampColor.value;
+                div.style.borderColor = stampColor.value;
+                div.style.width = '60px';
+                div.style.height = '60px';
+                const span = document.createElement('span');
+                span.innerText = txt;
+                div.appendChild(span);
+                div.style.fontSize = (50 / (txt.length > 2 ? 2 : 1.5)) + 'px';
+            }
+            paper.appendChild(div);
+            makeDraggable(div);
+            stampHistory.push(div);
+            
+            // 생성 직후 선택 상태로
+            window.selectedStamp = div;
+            div.style.outline = '2px dashed blue';
+        }
+
+        // 바탕 클릭 시 도장 선택 해제
+        paper.addEventListener('click', function() {
+            document.querySelectorAll('.stamp').forEach(s => s.style.outline = 'none');
+            window.selectedStamp = null;
+        });
+
+        // 도장 정렬 함수
+        function alignStamp(position) {
+            const stamp = window.selectedStamp;
+            if (!stamp) {
+                // 선택된 게 없으면 가장 최근 것 선택
+                if (stampHistory.length > 0) {
+                    const last = stampHistory[stampHistory.length-1];
+                    if (document.body.contains(last)) {
+                        alignStampTarget(last, position);
+                        return;
+                    }
+                }
+                alert('먼저 정렬할 도장을 클릭해서 선택해주세요.');
+                return;
+            }
+            alignStampTarget(stamp, position);
+        }
+
+        function alignStampTarget(stamp, position) {
+            // CSS reset
+            stamp.style.right = 'auto'; 
+            stamp.style.bottom = 'auto';
+            
+            if (position === 'center') {
+                stamp.style.top = '50%';
+                stamp.style.left = '50%';
+                stamp.style.transform = 'translate(-50%, -50%)';
+            } else if (position === 'bottom') {
+                // 하단 중앙
+                stamp.style.top = 'auto';
+                stamp.style.bottom = '100px'; // 하단 여백
+                stamp.style.left = '50%';
+                stamp.style.transform = 'translateX(-50%)';
+            }
+        }
+        
+        undoStampBtn.addEventListener('click', function() {
+            if (stampHistory.length > 0) {
+                const lastStamp = stampHistory.pop();
+                if (lastStamp && lastStamp.parentNode) lastStamp.remove();
+            } else {
+                const stamps = document.querySelectorAll('.stamp');
+                if(stamps.length > 0) stamps[stamps.length-1].remove();
+            }
+        });
+
+        clearStampsBtn.addEventListener('click', function() {
+            const stamps = document.querySelectorAll('.stamp');
+            if(stamps.length === 0) return;
+            if(confirm('모든 도장을 지우시겠습니까?')) {
+                stamps.forEach(s => s.remove());
+                stampHistory = [];
+            }
+        });
+
+        function makeDraggable(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            elmnt.onmousedown = dragMouseDown;
+            elmnt.ontouchstart = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                if (e.target.className === 'delete-btn') return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                pos1 = pos3 - clientX;
+                pos2 = pos4 - clientY;
+                pos3 = clientX;
+                pos4 = clientY;
+                let newTop = (elmnt.offsetTop - pos2);
+                let newLeft = (elmnt.offsetLeft - pos1);
+                
+                elmnt.style.transform = 'none';
+                
+                elmnt.style.top = newTop + "px";
+                elmnt.style.left = newLeft + "px";
+                elmnt.style.right = 'auto';
+                elmnt.style.bottom = 'auto';
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+            }
+        }
+
+        // 이미지 저장 함수 (html-to-image 사용)
+        saveBtn.addEventListener('click', function() {
+            const delBtns = document.querySelectorAll('.delete-btn');
+            document.querySelectorAll('.stamp').forEach(s => s.style.outline = 'none');
+            delBtns.forEach(b => b.style.display = 'none');
+
+            htmlToImage.toPng(paper)
+                .then(function (dataUrl) {
+                    var link = document.createElement('a');
+                    link.download = '나만의_서찰_상장.png';
+                    link.href = dataUrl;
+                    link.click();
+                    delBtns.forEach(b => b.style.display = '');
+                })
+                .catch(function (error) {
+                    console.error('이미지 저장 실패:', error);
+                    alert('이미지 저장 중 오류가 발생했습니다.');
+                    delBtns.forEach(b => b.style.display = '');
+                });
+        });
+        
+        updateText();
+    </script>
+</body>
+</html>
