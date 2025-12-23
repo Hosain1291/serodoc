@@ -117,10 +117,7 @@
             font-family: 'Gulim', sans-serif;
         }
 
-        /* 숫자 입력 필드 전용 스타일 */
-        input[type="number"] {
-            padding-right: 2px;
-        }
+        input[type="number"] { padding-right: 2px; }
 
         .checkbox-group {
             display: flex;
@@ -225,7 +222,7 @@
             font-size: 1.5em; /* 1.5배 크기 */
             font-weight: bold;
             display: inline-block;
-            margin-bottom: 0.5em; /* 제목 아래(왼쪽) 약간의 간격 */
+            margin-bottom: 0.5em; 
         }
 
         #topLogo {
@@ -318,17 +315,11 @@
             <div class="section-title">1. 글쓰기 & 폰트</div>
             <div class="control-group">
                 <textarea id="textInput" placeholder="이곳에 내용을 입력하세요. 오른쪽 종이에 세로로 나타납니다.">
-상 장
-
-성명: 홍길동
-부문: 세로쓰기
-
-위 사람은 세로쓰기 기능을
-훌륭하게 활용하였기에
-이 상장을 수여합니다.
-
-2024년 5월 20일
-개발자 드림</textarea>
+단풍 든 숲 속에 두 갈래 길이 있더군요.
+몸이 하나니 두 길을 다 가 볼 수는 없어
+나는 서운한 마음으로 한참 서서
+잣나무 숲 속으로 접어든 한쪽 길을
+끝 간 데까지 바라보았습니다</textarea>
             </div>
 
             <div class="control-group">
@@ -356,7 +347,7 @@
                 </div>
             </div>
             
-            <!-- 첫 줄 제목 강조 옵션 추가 -->
+            <!-- 첫 줄 제목 강조 옵션 -->
             <div class="checkbox-group">
                 <input type="checkbox" id="firstLineBig" checked>
                 <label for="firstLineBig">첫 줄 크게 (제목)</label>
@@ -438,12 +429,8 @@
         <!-- 결과물 미리보기 -->
         <div class="preview-wrapper" id="previewWrapper">
             <div id="paper">
-                <!-- 로고 이미지가 들어갈 공간 -->
                 <img id="topLogo" style="display:none;">
-                
-                <span id="contentArea">
-                    상 장.<br><br>성명: 홍길동<br>부문: 세로쓰기<br><br>위 사람은 세로쓰기 기능을<br>훌륭하게 활용하였기에<br>이 상장을 수여합니다.<br><br>2024년 5월 20일<br>개발자 드림
-                </span>
+                <span id="contentArea"></span>
             </div>
         </div>
     </div>
@@ -457,7 +444,7 @@
         const lineHeight = document.getElementById('lineHeight');
         const paperHeight = document.getElementById('paperHeight');
         const autoHeightCheck = document.getElementById('autoHeightCheck');
-        const firstLineBig = document.getElementById('firstLineBig'); // 첫 줄 강조 체크박스
+        const firstLineBig = document.getElementById('firstLineBig');
         const fontSelect = document.getElementById('fontSelect');
         const customFontFile = document.getElementById('customFontFile');
         const textColor = document.getElementById('textColor');
@@ -479,7 +466,6 @@
 
         function updateText() {
             let val = textInput.value;
-            // 특수문자 전각 변환 및 위치 보정
             val = val.replace(/\./g, '．')
                      .replace(/,/g, '，')
                      .replace(/!/g, '！')
@@ -487,26 +473,19 @@
 
             val = val.replace(/([．，！？])/g, '<span class="punct">$1</span>');
 
-            // 줄 단위 분리
             let lines = val.split('\n');
-            
-            // 첫 줄 강조 로직
             if (firstLineBig.checked && lines.length > 0 && lines[0].trim() !== '') {
                 lines[0] = `<span class="title-line">${lines[0]}</span>`;
             }
-
-            // 다시 합치기
             contentArea.innerHTML = lines.join('<br>');
         }
 
         textInput.addEventListener('input', updateText);
-        firstLineBig.addEventListener('change', updateText); // 체크박스 변경 시 업데이트
+        firstLineBig.addEventListener('change', updateText);
 
         bgColor.addEventListener('input', (e) => paper.style.backgroundColor = e.target.value);
-        
         fontSize.addEventListener('input', (e) => paper.style.fontSize = e.target.value + 'px');
         lineHeight.addEventListener('input', (e) => paper.style.lineHeight = e.target.value);
-        
         textColor.addEventListener('input', (e) => paper.style.color = e.target.value);
         
         paperHeight.addEventListener('input', (e) => {
@@ -717,7 +696,9 @@
 
             function dragMouseDown(e) {
                 e = e || window.event;
+                // 삭제 버튼 클릭 시 드래그 방지
                 if (e.target.className === 'delete-btn') return;
+                
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 pos3 = clientX;
@@ -755,38 +736,55 @@
             }
         }
 
-        // 이미지 저장 함수 (html-to-image 사용)
+        // 이미지 저장 함수 (수정됨: 안정성 확보)
         saveBtn.addEventListener('click', function() {
-            // 도장 선택 효과(테두리) 제거
+            // 도장 선택 테두리 제거
             document.querySelectorAll('.stamp').forEach(s => s.style.outline = 'none');
             window.selectedStamp = null;
 
-            // 로딩 표시 (옵션)
             const originalText = saveBtn.innerText;
             saveBtn.innerText = '저장 중...';
 
-            htmlToImage.toPng(paper, {
+            const delBtns = document.querySelectorAll('.delete-btn');
+            delBtns.forEach(b => b.style.display = 'none'); // 삭제 버튼 숨김
+
+            // toBlob 방식 사용 (대용량 처리에 유리)
+            htmlToImage.toBlob(paper, {
                 quality: 1.0,
-                pixelRatio: 2, // 고화질
-                backgroundColor: paper.style.backgroundColor || '#f4e4bc', // 배경색 명시
-                width: paper.scrollWidth, // 세로쓰기 시 너비 문제 해결을 위해 명시
+                pixelRatio: 2, 
+                backgroundColor: paper.style.backgroundColor || '#f4e4bc',
+                width: paper.scrollWidth,
                 height: paper.scrollHeight,
-                filter: (node) => {
-                    // 캡처 시 제외할 요소: 삭제 버튼
-                    return !node.classList || !node.classList.contains('delete-btn');
-                }
+                // filter 기능 삭제 (직접 DOM 숨김 처리로 대체하여 오류 방지)
             })
-            .then(function (dataUrl) {
-                var link = document.createElement('a');
-                link.download = '문서.png';
-                link.href = dataUrl;
+            .then(function (blob) {
+                // 다운로드 트리거
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = '나만의_서찰.png';
+                link.href = url;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                // 복구
                 saveBtn.innerText = originalText;
+                delBtns.forEach(b => b.style.display = '');
             })
             .catch(function (error) {
                 console.error('이미지 저장 실패:', error);
-                alert('이미지 저장 중 오류가 발생했습니다.\n' + error.message);
+                alert('이미지 저장에 실패했습니다. (브라우저 보안 설정 등을 확인하세요)');
+                
+                // 최후의 수단: 새 창에 이미지 띄우기
+                htmlToImage.toPng(paper).then(function(dataUrl){
+                     const win = window.open();
+                     win.document.write('<img src="' + dataUrl + '" style="max-width:100%"/>');
+                     win.document.write('<br><b>이미지를 우클릭하여 저장하세요.</b>');
+                });
+
                 saveBtn.innerText = originalText;
+                delBtns.forEach(b => b.style.display = '');
             });
         });
         
@@ -794,4 +792,3 @@
     </script>
 </body>
 </html>
-
