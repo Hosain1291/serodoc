@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세로쓰기 에디터</title>
+    <title>세로쓰기 에디터 (Modern 1:1)</title>
     
     <!-- 아이콘 (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -174,13 +174,11 @@
             z-index: 15; /* 텍스트(0) < 사진(15) < 도장(20) */
         }
         .user-photo img {
-            width: 250px; /* 기본 크기 */
-            max-width: 500px;
-            height: auto;
+            width: 100%; height: 100%; /* 부모 크기에 맞춤 */
+            object-fit: contain;
             pointer-events: none;
             display: block;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* 사진 그림자 */
-            /* background: white;  <- 투명 배경을 위해 제거 */
         }
 
         /* --- 도장 (Stamp) --- */
@@ -214,7 +212,7 @@
     <aside>
         <div class="sidebar-header">
             <i data-lucide="file-text"></i>
-            <h1>세로쓰기 에디터</h1>
+            <h1>세로쓰기 에디터 (1:1)</h1>
         </div>
         
         <div class="sidebar-content">
@@ -222,19 +220,9 @@
             <div class="control-group">
                 <label>문서 내용</label>
                 <textarea id="textContent">
-상 장
-
-성명: 홍 길 동
-부문: 세로쓰기
-
-위 사람은 1:1 정방형 비율에서
-시작하여, 글이 길어지면
-좌측으로 종이를 확장하는
-혁신적인 레이아웃을 구현했기에
-이 상장을 수여합니다.
-
-2024년 5월 20일
-개발자 드림</textarea>
+나는 지금부터 우리가 기록해야 할 역사는 활기찬 창조의 
+새 역사이어야 하며, 민족의 자주성에 입각한 영광의 역사
+이어야 한다고 굳게 믿는바 입니다.</textarea>
             </div>
 
             <!-- 2. 크기 설정 -->
@@ -295,7 +283,7 @@
             <!-- 4. 사진 추가 (New) -->
             <div class="control-group">
                 <label>사진 추가</label>
-                <span class="desc">문서 중간에 넣을 사진을 선택하세요. (글자 위에 배치됨)</span>
+                <span class="desc">문서 중간에 넣을 사진을 선택하세요.</span>
                 <input type="file" id="photoInput" accept="image/*">
             </div>
 
@@ -314,6 +302,16 @@
                     <label style="font-size:0.8rem; margin-bottom:4px;">도장 이미지 파일</label>
                     <input type="file" id="stampImageInput" accept="image/*">
                 </div>
+            </div>
+
+            <!-- NEW: 크기 조절 -->
+            <div class="control-group">
+                <label>도장/사진 크기 조절</label>
+                <div class="row" style="align-items: center;">
+                    <input type="range" id="itemSizeSlider" min="30" max="400" value="100" style="flex:1;">
+                    <span id="itemSizeLabel" style="width:50px; text-align:right; font-size:0.9rem;">100px</span>
+                </div>
+                <span class="desc">도장이나 사진을 클릭하고 조절하세요.</span>
             </div>
         </div>
 
@@ -353,6 +351,10 @@
         const stampColor = document.getElementById('stampColor');
         const stampImageInput = document.getElementById('stampImageInput');
         const photoInput = document.getElementById('photoInput');
+
+        const itemSizeSlider = document.getElementById('itemSizeSlider');
+        const itemSizeLabel = document.getElementById('itemSizeLabel');
+        let selectedElement = null;
 
         // --- 1. 문서 내용 및 크기 로직 ---
         function updateText() {
@@ -419,11 +421,13 @@
         function addPhotoElement(src) {
             const el = document.createElement('div');
             el.className = 'draggable-item user-photo';
-            
+            el.style.width = '250px'; // 초기 크기
+            el.style.height = 'auto'; // 비율 유지
+
             const delBtn = document.createElement('div');
             delBtn.className = 'delete-btn';
             delBtn.innerHTML = '<i data-lucide="x" style="width:14px;"></i>';
-            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); };
+            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); selectedElement = null; };
             el.appendChild(delBtn);
 
             const img = document.createElement('img');
@@ -438,6 +442,9 @@
             paper.appendChild(el);
             makeDraggable(el);
             lucide.createIcons();
+            
+            // 추가된 직후 선택 상태로 만듦
+            selectItem(el);
         }
 
 
@@ -449,7 +456,7 @@
             const delBtn = document.createElement('div');
             delBtn.className = 'delete-btn';
             delBtn.innerHTML = '<i data-lucide="x" style="width:14px;"></i>';
-            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); };
+            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); selectedElement = null; };
             el.appendChild(delBtn);
 
             if (type === 'image') {
@@ -480,9 +487,53 @@
             paper.appendChild(el);
             makeDraggable(el);
             lucide.createIcons(); 
+            
+            // 추가된 직후 선택
+            selectItem(el);
         }
 
         stampImageInput.addEventListener('change', () => addStamp('image'));
+
+        // --- 크기 조절 로직 ---
+        itemSizeSlider.addEventListener('input', function() {
+            const newVal = this.value;
+            itemSizeLabel.innerText = newVal + 'px';
+            
+            if (selectedElement) {
+                // 너비 조절
+                selectedElement.style.width = newVal + 'px';
+                
+                // 텍스트 도장의 경우 폰트 사이즈도 비율 조절
+                if (selectedElement.classList.contains('stamp') && !selectedElement.querySelector('img')) {
+                    selectedElement.style.height = newVal + 'px'; // 정사각형 유지
+                    // 텍스트 길이 체크는 어렵지만 단순 비율로 적용
+                    selectedElement.style.fontSize = (newVal / 2.5) + 'px';
+                } 
+                // 이미지 도장이거나 사진인 경우
+                else {
+                    if (selectedElement.classList.contains('stamp')) {
+                         selectedElement.style.height = newVal + 'px'; // 도장은 보통 정사각형
+                    } else {
+                         // 사진은 height: auto 유지 (CSS에서 처리하거나 명시)
+                         selectedElement.style.height = 'auto';
+                    }
+                }
+            }
+        });
+
+        function selectItem(elmnt) {
+            // 기존 선택 해제
+            document.querySelectorAll('.draggable-item').forEach(s => s.classList.remove('selected'));
+            
+            // 새 선택
+            selectedElement = elmnt;
+            elmnt.classList.add('selected');
+            
+            // 슬라이더 값 동기화
+            const currentWidth = parseInt(elmnt.style.width || elmnt.offsetWidth);
+            itemSizeSlider.value = currentWidth;
+            itemSizeLabel.innerText = currentWidth + 'px';
+        }
 
         // 드래그 기능 (공통)
         function makeDraggable(elmnt) {
@@ -492,9 +543,7 @@
             function dragStart(e) {
                 if(e.target.closest('.delete-btn')) return;
                 
-                // 모든 드래그 아이템(사진, 도장) 선택 해제
-                document.querySelectorAll('.draggable-item').forEach(s => s.classList.remove('selected'));
-                elmnt.classList.add('selected'); 
+                selectItem(elmnt); // 클릭 시 선택 처리 & 슬라이더 동기화
                 
                 e.preventDefault();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -528,6 +577,7 @@
         paper.addEventListener('click', (e) => {
             if(!e.target.closest('.draggable-item')) {
                 document.querySelectorAll('.draggable-item').forEach(s => s.classList.remove('selected'));
+                selectedElement = null;
             }
         });
 
