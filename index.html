@@ -3,792 +3,532 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>[세로쓰기 문서]</title>
+    <title>세로쓰기 에디터 (Modern 1:1)</title>
+    
+    <!-- 아이콘 (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- 이미지 변환 및 다운로드 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <!-- 웹 폰트 (UI용 + 문서용) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
     <style>
-        /* 기본 웹폰트 정의 */
-        @font-face { 
-            font-family: 'Sangjang'; 
-            src: url('상장체B-Bold.woff') format('woff');
-            font-weight: normal;
-            font-style: normal;
-        }
+        /* --- 1. 폰트 정의 --- */
+        @font-face { font-family: 'Sangjang'; src: url('상장체B-Bold.woff') format('woff'); }
         @font-face { font-family: 'Dobong'; src: url('dobonghan-Medium.woff') format('woff'); }
         @font-face { font-family: 'Jinin'; src: url('Jinin-B.woff') format('woff'); }
         @font-face { font-family: 'Gaehangro'; src: url('Gaehangro-H.woff') format('woff'); }
         @font-face { font-family: 'Song'; src: url('Song-B.woff') format('woff'); }
         @font-face { font-family: 'Solmoe'; src: url('SolmoeKimDaeGeonhan-Medium.woff') format('woff'); }
 
-        /* UI 스타일 - 레트로 DOS/Windows 95 스타일 */
+        /* --- 2. 기본 스타일 --- */
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-body: #f3f4f6;
+            --bg-panel: #ffffff;
+            --text-main: #111827;
+            --text-sub: #6b7280;
+            --border: #e5e7eb;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
         body {
-            background-color: #008080;
-            color: #fff;
-            font-family: 'Gulim', 'Malgun Gothic', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Noto Sans KR', sans-serif;
             margin: 0;
-        }
-
-        h1 { 
-            margin-bottom: 20px; 
-            text-shadow: 2px 2px #000; 
-            font-family: 'Gulim', monospace;
-            background-color: #c0c0c0;
-            color: #000;
-            padding: 5px 20px;
-            border: 2px solid #fff;
-            border-right-color: #404040;
-            border-bottom-color: #404040;
-            box-shadow: 2px 2px 0px #000;
-        }
-
-        .container {
             display: flex;
-            gap: 20px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        /* 컨트롤 패널 */
-        .controls {
-            background: #c0c0c0;
-            padding: 15px;
-            border: 2px solid #fff;
-            border-right-color: #404040;
-            border-bottom-color: #404040;
-            color: #000;
-            width: 340px;
+        /* --- 사이드바 --- */
+        aside {
+            width: 360px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
-            max-height: 85vh;
-            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
         }
 
-        .controls::-webkit-scrollbar { width: 10px; background: #c0c0c0; }
-        .controls::-webkit-scrollbar-thumb { background: #808080; border: 1px solid #c0c0c0; }
+        .sidebar-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .sidebar-header h1 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 24px; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #f9fafb; }
 
-        .section-title {
-            font-size: 1em;
-            font-weight: bold;
-            background-color: #000080;
-            color: #fff;
-            padding: 4px 8px;
-            margin-bottom: 5px;
-            margin-top: 10px;
-            border: 1px inset #fff;
-        }
-
-        .control-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 5px; }
-        label { font-size: 0.9em; color: #000; font-weight: bold; }
-        
-        textarea {
-            width: 100%; 
-            height: 150px; 
-            padding: 8px;
-            background: #fff; 
-            color: #000; 
-            border: 2px solid #404040;
-            border-right-color: #fff;
-            border-bottom-color: #fff;
-            border-radius: 0;
-            resize: vertical; 
-            font-size: 16px;
-            line-height: 1.6;
-            writing-mode: horizontal-tb !important;
-            text-orientation: mixed !important;
-            font-family: 'Gulim', sans-serif;
-        }
-
-        /* 입력 필드 (숫자, 텍스트 등) 스타일 공통 */
-        input[type="text"], input[type="number"], select, input[type="file"], input[type="color"] {
-            width: 100%; padding: 6px;
-            background: #fff; color: #000; 
-            border: 2px solid #404040;
-            border-right-color: #fff;
-            border-bottom-color: #fff;
-            border-radius: 0; 
-            box-sizing: border-box;
-            font-family: 'Gulim', sans-serif;
-        }
-
-        input[type="number"] { padding-right: 2px; }
-
-        .checkbox-group {
+        /* --- 메인 영역 (스크롤 처리 핵심) --- */
+        main {
+            flex: 1;
+            position: relative;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            overflow: auto; /* 스크롤 허용 */
             display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #e0e0e0;
-            padding: 8px;
-            border: 2px inset #fff;
+            
+            /* 핵심: 세로쓰기 좌측 확장을 위해 RTL 방향 설정 */
+            /* 이렇게 하면 내용이 왼쪽으로 늘어날 때 스크롤바가 자연스럽게 작동합니다 */
+            direction: rtl; 
+            
+            padding: 40px;
         }
-        .checkbox-group input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; }
-        .checkbox-group label { margin: 0; cursor: pointer; color: #000; font-weight: bold; }
+        
+        /* 메인 내부 컨테이너 정렬 */
+        #previewContainer {
+            margin: auto; /* 중앙 정렬 */
+            direction: ltr; /* 내부는 다시 LTR로 복구 (필요시) */
+        }
+
+        /* --- 컴포넌트 UI --- */
+        .control-group { margin-bottom: 24px; }
+        .control-group label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 8px; }
+        .control-group .desc { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 8px; display: block; }
+        
+        input, select, textarea {
+            width: 100%; padding: 10px 12px;
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.95rem; background: #fff;
+            font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+        
+        .row { display: flex; gap: 10px; }
+        .col { flex: 1; }
+        
+        .toggle-wrapper {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px; background: #f9fafb; border-radius: 8px;
+            border: 1px solid var(--border); cursor: pointer;
+        }
+        .toggle-wrapper input { margin-right: 10px; }
 
         button {
-            background: #c0c0c0; 
-            color: #000; 
-            border: 2px solid #fff;
-            border-right-color: #404040;
-            border-bottom-color: #404040;
-            padding: 8px 12px; 
-            border-radius: 0; 
-            cursor: pointer;
-            font-weight: bold; 
-            font-family: 'Gulim', sans-serif;
-            margin-top: 5px;
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-weight: 600; cursor: pointer; transition: all 0.2s;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
         }
-        button:active { 
-            border: 2px solid #404040;
-            border-right-color: #fff;
-            border-bottom-color: #fff;
-            transform: translate(1px, 1px);
-        }
-        button:hover { background: #d0d0d0; }
-        
-        button.primary { color: #000080; }
-        button.danger { color: #800000; }
-        button.warning { color: #804000; }
-        button.success { color: #004000; }
+        .btn-primary { background-color: var(--primary); color: white; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn-secondary { background-color: white; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background-color: #f3f4f6; }
 
-        /* 미리보기 영역 */
-        .preview-wrapper {
-            background: #808080;
-            padding: 30px;
-            border: 2px inset #fff;
-            overflow-x: auto; 
-            max-width: calc(100vw - 400px);
-            min-width: 500px;
-            display: flex;
-            direction: rtl; 
-            box-shadow: inset 2px 2px 5px #000;
-        }
-
-        /* 종이 스타일 */
+        /* --- 종이 (Paper) 스타일 --- */
         #paper {
-            position: relative; 
+            background-color: #fffbf0;
+            color: #111;
+            
+            /* 핵심: 세로쓰기 설정 */
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            direction: ltr; 
-            text-align: left;
             
-            height: 700px; 
-            width: fit-content; 
-            min-width: 400px;
-            
-            background-color: #f4e4bc;
-            color: #000;
-            
-            /* 오른쪽 여백 20px 적용 */
-            padding: 50px 20px 60px 60px;
+            /* 기본 사이즈 (스크립트로 제어됨) */
+            height: 800px;     /* 세로 길이 (줄 길이) */
+            min-width: 800px;  /* 가로 너비 (줄 수, 최소 1:1 유지) */
+            /* width: max-content; -> JS에서 토글됨 */
+
+            padding: 80px 60px;
             box-sizing: border-box;
-            
-            font-family: 'Solmoe', 'Gungsuh', 'Batang', serif;
-            font-size: 28px;
-            line-height: 1.8;
-            
-            box-shadow: 5px 5px 10px rgba(0,0,0,0.5);
-            white-space: pre-wrap;
-            word-break: break-all;
-            overflow-wrap: break-word;
-            
-            transition: padding 0.3s ease, border 0.3s;
-        }
-        
-        #paper.has-logo { padding-top: 140px; }
-        
-        #paper.certificate-mode {
-            border: 10px double #daa520; 
-            outline: 2px solid #daa520;
-            outline-offset: -20px; 
-        }
-
-        #paper p { margin: 0; white-space: pre-wrap; }
-
-        .punct {
-            display: inline-block;
             position: relative;
-            top: -0.35em; 
-            margin-bottom: -0.35em; 
+            cursor: default;
+            
+            font-family: 'Gowun Batang', serif;
+            font-size: 24px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            
+            box-shadow: var(--shadow-lg);
+            transition: height 0.3s, min-width 0.3s; /* 부드러운 크기 변경 */
+            
+            /* 왼쪽 확장을 위한 정렬 처리 */
+            margin-left: auto; 
+            margin-right: auto;
         }
 
-        /* 제목(첫 줄) 강조 스타일 */
-        .title-line {
-            font-size: 1.5em; /* 1.5배 크기 */
-            font-weight: bold;
-            display: inline-block;
-            margin-bottom: 0.5em; 
+        /* 폰트 클래스 */
+        #paper.font-sangjang { font-family: 'Sangjang', 'Nanum Myeongjo', serif; }
+        #paper.font-dobong { font-family: 'Dobong', 'Gowun Batang', serif; }
+        #paper.font-jinin { font-family: 'Jinin', serif; }
+        #paper.font-gaehangro { font-family: 'Gaehangro', serif; }
+        #paper.font-song { font-family: 'Song', serif; }
+        #paper.font-solmoe { font-family: 'Solmoe', serif; }
+
+        /* 상장 테두리 */
+        #paper.certificate-mode {
+            border: 12px double #daa520;
+            outline: 2px solid #daa520;
+            outline-offset: -20px;
         }
 
-        #topLogo {
-            position: absolute;
-            top: 25px; 
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 100px;
-            max-height: 100px;
-            opacity: 0.9;
-            pointer-events: none; 
-            z-index: 5;
-        }
-
-        /* 도장 스타일 */
+        /* --- 도장 (Stamp) --- */
         .stamp {
-            position: absolute;
-            z-index: 10;
-            cursor: move;
-            user-select: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            font-family: 'Hanja', 'Gungsuh', serif; 
-            box-sizing: border-box;
-            line-height: 1.2;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            position: absolute; z-index: 20; cursor: move; user-select: none;
+            display: flex; justify-content: center; align-items: center;
             mix-blend-mode: multiply; 
-            direction: ltr;
         }
-
-        .stamp.image { box-shadow: none; }
-
-        .stamp.square {
-            border-style: solid;
-            border-width: 4px;
-            writing-mode: vertical-rl; 
+        .stamp-content {
+            border: 3px solid #cc0000; color: #cc0000;
+            font-family: 'Jinin', 'Gowun Batang', serif; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            writing-mode: vertical-rl; line-height: 1; white-space: nowrap;
+            width: 100%; height: 100%; pointer-events: none;
         }
-
-        .stamp.circle {
-            border-style: solid;
-            border-width: 4px;
-            border-radius: 50%;
-            writing-mode: vertical-rl;
+        .stamp.circle .stamp-content { border-radius: 50%; }
+        .stamp img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+        .stamp.selected { outline: 2px dashed var(--primary); mix-blend-mode: normal; }
+        .delete-btn {
+            position: absolute; top: -10px; right: -10px; width: 24px; height: 24px;
+            background: #ef4444; color: white; border-radius: 50%;
+            display: none; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 14px; z-index: 30;
         }
+        .stamp:hover .delete-btn, .stamp.selected .delete-btn { display: flex; }
 
-        .stamp img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none; 
-        }
-
-        .stamp:active { opacity: 0.8; cursor: grabbing; }
-
-        .stamp .delete-btn {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background: #800000;
-            color: white;
-            border-radius: 0;
-            width: 20px;
-            height: 20px;
-            text-align: center;
-            line-height: 18px;
-            font-size: 12px;
-            cursor: pointer;
-            display: none;
-            border: 1px solid white;
-            z-index: 100;
-            box-shadow: 1px 1px 2px #000;
-        }
-        .stamp:hover .delete-btn { display: block; }
-
-        @media (max-width: 800px) {
-            .preview-wrapper { max-width: 100%; }
+        @media (max-width: 1024px) {
+            body { flex-direction: column; overflow: auto; }
+            aside { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+            main { padding: 20px; min-height: 600px; direction: ltr; } /* 모바일에선 LTR로 복귀 */
+            #paper { transform: scale(0.8); transform-origin: top center; margin: 0 auto; }
         }
     </style>
 </head>
 <body>
 
-    <h1>[세로쓰기 문서]</h1>
-
-    <div class="container">
-        <!-- 설정 패널 -->
-        <div class="controls">
-            
-            <div class="section-title">1. 글쓰기 & 폰트</div>
+    <aside>
+        <div class="sidebar-header">
+            <i data-lucide="file-text"></i>
+            <h1>세로쓰기 에디터 (1:1)</h1>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- 1. 텍스트 입력 -->
             <div class="control-group">
-                <textarea id="textInput" placeholder="이곳에 내용을 입력하세요. 오른쪽 종이에 세로로 나타납니다.">
-단풍 든 숲 속에 두 갈래 길이 있더군요.
-몸이 하나니 두 길을 다 가 볼 수는 없어
-나는 서운한 마음으로 한참 서서
-잣나무 숲 속으로 접어든 한쪽 길을
-끝 간 데까지 바라보았습니다</textarea>
+                <label>문서 내용</label>
+                <textarea id="textContent">
+상 장
+
+성명: 홍 길 동
+부문: 세로쓰기
+
+위 사람은 1:1 정방형 비율에서
+시작하여, 글이 길어지면
+좌측으로 종이를 확장하는
+혁신적인 레이아웃을 구현했기에
+이 상장을 수여합니다.
+
+2024년 5월 20일
+개발자 드림</textarea>
             </div>
 
+            <!-- 2. 크기 설정 -->
             <div class="control-group">
-                <label>글씨체 선택:</label>
+                <label>종이 크기 (1:1 정방형)</label>
+                <div class="row">
+                    <!-- 기본값 800px -->
+                    <input type="number" id="baseSizeInput" value="800" min="500" max="2000" step="50" placeholder="기본 800">
+                    <label class="toggle-wrapper" style="flex: 1.4; margin-bottom: 5px;">
+                        <span>좌측 자동확장</span>
+                        <input type="checkbox" id="autoExpandCheck" checked>
+                    </label>
+                </div>
+                <span class="desc" style="display:block; margin-top:5px;">
+                    * 기본적으로 정사각형(1:1)을 유지합니다.<br>
+                    * 내용이 넘치면 종이가 왼쪽으로 늘어납니다.
+                </span>
+            </div>
+
+            <!-- 3. 스타일 설정 -->
+            <div class="control-group">
+                <label>글꼴 선택</label>
                 <select id="fontSelect">
-                    <option value="'Sangjang', serif">상장체 (상장 추천)</option>
-                    <option value="'Solmoe', 'Gungsuh', serif">솔뫼 김대건</option>
-                    <option value="'Jinin', 'Gungsuh', serif">지닌체 (붓글씨)</option>
-                    <option value="'Dobong', sans-serif">도봉옛길</option>
-                    <option value="'Gaehangro', sans-serif">개항로</option>
-                    <option value="'Song', serif">송글씨</option>
+                    <option value="font-sangjang">상장체 (추천)</option>
+                    <option value="font-solmoe">솔뫼 김대건체 (붓글씨)</option>
+                    <option value="font-jinin">지닌체 (굵은 붓)</option>
+                    <option value="font-dobong">도봉옛길</option>
+                    <option value="font-gaehangro">개항로</option>
+                    <option value="font-song">송글씨</option>
+                    <option value="">고운 바탕 (기본)</option>
                 </select>
             </div>
-            
-            <div class="control-group">
-                <label>📂 폰트 추가 (.ttf, .woff):</label>
-                <input type="file" id="customFontFile" accept=".ttf, .otf, .woff, .woff2">
-            </div>
 
-            <div class="control-group">
-                <label>글자 설정 (크기px / 줄간격):</label>
-                <div style="display:flex; gap:5px;">
-                    <input type="number" id="fontSize" value="28" min="10" max="100" placeholder="크기(px)" title="글자 크기 (px)">
-                    <input type="number" id="lineHeight" value="1.8" min="1.0" max="5.0" step="0.1" placeholder="줄간격" title="줄 간격 (배수)">
+            <div class="row control-group">
+                <div class="col">
+                    <label>글자 크기</label>
+                    <input type="number" id="fontSize" value="26" min="12" max="60">
+                </div>
+                <div class="col">
+                    <label>줄 간격</label>
+                    <input type="number" id="lineHeight" value="1.8" step="0.1" min="1.0">
                 </div>
             </div>
-            
-            <!-- 첫 줄 제목 강조 옵션 -->
-            <div class="checkbox-group">
-                <input type="checkbox" id="firstLineBig" checked>
-                <label for="firstLineBig">첫 줄 크게 (제목)</label>
-            </div>
-            
+
             <div class="control-group">
-                <label>글자 색상:</label>
-                <input type="color" id="textColor" value="#000000">
+                <label class="toggle-wrapper">
+                    <span>🏆 상장 테두리 적용</span>
+                    <input type="checkbox" id="checkCertificate">
+                </label>
             </div>
 
-            <div class="section-title">2. 상장 및 배경 설정</div>
             <div class="control-group">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="certificateMode">
-                    <label for="certificateMode">🏆 상장 테두리 적용</label>
+                <label>종이 색상</label>
+                <div class="row">
+                    <input type="color" id="bgColor" value="#fffbf0" style="height:40px; padding:2px;">
+                    <button class="btn-secondary" onclick="document.getElementById('bgColor').value='#ffffff'; updateStyle();" style="width:auto;">흰색</button>
+                    <button class="btn-secondary" onclick="document.getElementById('bgColor').value='#fffbf0'; updateStyle();" style="width:auto;">미색</button>
                 </div>
             </div>
-            
+
+            <hr style="border:0; border-top:1px solid #eee; margin: 20px 0;">
+
+            <!-- 4. 도장 -->
             <div class="control-group">
-                <label>🖼️ 로고/마크 삽입:</label>
-                <input type="file" id="logoImageFile" accept="image/*">
+                <label>도장 추가</label>
+                <div class="row" style="margin-bottom: 8px;">
+                    <input type="text" id="stampText" placeholder="이름 (예: 홍길동인)" maxlength="6" value="홍길동인">
+                    <input type="color" id="stampColor" value="#cc0000" style="width:60px; padding:2px;">
+                </div>
+                <div class="row">
+                    <button class="btn-secondary" onclick="addStamp('square')">네모 도장</button>
+                    <button class="btn-secondary" onclick="addStamp('circle')">원형 도장</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <input type="file" id="stampImageInput" accept="image/*">
+                </div>
             </div>
-
-            <div class="control-group">
-                <label>종이 색상:</label>
-                <input type="color" id="bgColor" value="#f4e4bc">
-            </div>
-            
-            <div class="control-group">
-                <!-- 라벨 텍스트 삭제 및 placeholder로 대체 -->
-                <input type="number" id="paperHeight" value="700" min="400" max="3000" step="10" placeholder="문서 길이 (px)" title="문서 길이 조절">
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="autoHeightCheck">
-                <label for="autoHeightCheck">길이 자동 확장</label>
-            </div>
-
-            <div class="section-title">3. 도장(낙관)</div>
-            <div class="control-group">
-                <label>도장 종류:</label>
-                <select id="stampType">
-                    <option value="square">네모 도장 (이름)</option>
-                    <option value="circle">원형 도장 (이름)</option>
-                    <option value="image">사진/이미지 업로드</option>
-                </select>
-            </div>
-            
-            <div id="textStampInput" class="control-group">
-                <label>이름 (2~4글자):</label>
-                <input type="text" id="stampText" value="홍길동인" maxlength="6">
-                <label>도장 색상:</label>
-                <input type="color" id="stampColor" value="#cc0000">
-            </div>
-
-            <div id="imageStampInput" class="control-group" style="display:none;">
-                <label>도장 이미지:</label>
-                <input type="file" id="stampImageFile" accept="image/*">
-            </div>
-
-            <button onclick="addStamp()" style="background:#c0c0c0;">[ 도장 찍기 ]</button>
-            
-            <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button onclick="alignStamp('center')" class="success" style="flex:1;">중앙</button>
-                <button onclick="alignStamp('bottom-left')" class="success" style="flex:1;">좌측하단</button>
-                <button onclick="alignStamp('bottom-right')" class="success" style="flex:1;">우측하단</button>
-            </div>
-
-            <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button id="undoStampBtn" class="warning" style="flex:1;">실행 취소</button>
-                <button id="clearStampsBtn" class="danger" style="flex:1;">전체 삭제</button>
-            </div>
-
-
-            <div class="section-title">4. 저장</div>
-            <button id="saveBtn" class="primary">💾 이미지(PNG) 저장</button>
         </div>
 
-        <!-- 결과물 미리보기 -->
-        <div class="preview-wrapper" id="previewWrapper">
-            <div id="paper">
-                <img id="topLogo" style="display:none;">
-                <span id="contentArea"></span>
+        <div class="sidebar-footer">
+            <button class="btn-primary" onclick="downloadImage()">
+                <i data-lucide="download"></i>
+                전체 영역 이미지 저장
+            </button>
+        </div>
+    </aside>
+
+    <main>
+        <div id="previewContainer">
+            <div id="paper" class="font-sangjang">
+                <div id="paperContent"></div>
+                <!-- Stamps appended here -->
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
-        const textInput = document.getElementById('textInput');
+        lucide.createIcons();
+
+        // 요소 참조
+        const textContent = document.getElementById('textContent');
         const paper = document.getElementById('paper');
-        const contentArea = document.getElementById('contentArea');
-        const bgColor = document.getElementById('bgColor');
+        const paperContent = document.getElementById('paperContent');
         const fontSize = document.getElementById('fontSize');
         const lineHeight = document.getElementById('lineHeight');
-        const paperHeight = document.getElementById('paperHeight');
-        const autoHeightCheck = document.getElementById('autoHeightCheck');
-        const firstLineBig = document.getElementById('firstLineBig');
+        const bgColor = document.getElementById('bgColor');
         const fontSelect = document.getElementById('fontSelect');
-        const customFontFile = document.getElementById('customFontFile');
-        const textColor = document.getElementById('textColor');
-        const certificateMode = document.getElementById('certificateMode');
-        const logoImageFile = document.getElementById('logoImageFile');
-        const topLogo = document.getElementById('topLogo');
-        const saveBtn = document.getElementById('saveBtn');
+        const checkCertificate = document.getElementById('checkCertificate');
         
-        const stampType = document.getElementById('stampType');
-        const textStampInput = document.getElementById('textStampInput');
-        const imageStampInput = document.getElementById('imageStampInput');
+        // 크기 조절 요소 (변경됨)
+        const baseSizeInput = document.getElementById('baseSizeInput');
+        const autoExpandCheck = document.getElementById('autoExpandCheck');
+
         const stampText = document.getElementById('stampText');
         const stampColor = document.getElementById('stampColor');
-        const stampImageFile = document.getElementById('stampImageFile');
-        const undoStampBtn = document.getElementById('undoStampBtn');
-        const clearStampsBtn = document.getElementById('clearStampsBtn');
+        const stampImageInput = document.getElementById('stampImageInput');
 
-        let stampHistory = [];
-
+        // --- 1. 문서 내용 및 크기 로직 ---
         function updateText() {
-            let val = textInput.value;
-            val = val.replace(/\./g, '．')
-                     .replace(/,/g, '，')
-                     .replace(/!/g, '！')
-                     .replace(/\?/g, '？');
-
-            val = val.replace(/([．，！？])/g, '<span class="punct">$1</span>');
-
-            let lines = val.split('\n');
-            if (firstLineBig.checked && lines.length > 0 && lines[0].trim() !== '') {
-                lines[0] = `<span class="title-line">${lines[0]}</span>`;
-            }
-            contentArea.innerHTML = lines.join('<br>');
+            let txt = textContent.value;
+            paperContent.innerText = txt;
+            updateDimensions(); // 텍스트 변경 시 크기 체크
         }
 
-        textInput.addEventListener('input', updateText);
-        firstLineBig.addEventListener('change', updateText);
-
-        bgColor.addEventListener('input', (e) => paper.style.backgroundColor = e.target.value);
-        fontSize.addEventListener('input', (e) => paper.style.fontSize = e.target.value + 'px');
-        lineHeight.addEventListener('input', (e) => paper.style.lineHeight = e.target.value);
-        textColor.addEventListener('input', (e) => paper.style.color = e.target.value);
+        function updateStyle() {
+            paper.style.fontSize = fontSize.value + 'px';
+            paper.style.lineHeight = lineHeight.value;
+            paper.style.backgroundColor = bgColor.value;
+            updateDimensions(); // 스타일 변경 시 크기 체크
+        }
         
-        paperHeight.addEventListener('input', (e) => {
-            if (!autoHeightCheck.checked) {
-                paper.style.height = e.target.value + 'px';
-            }
-        });
-
-        autoHeightCheck.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                paper.style.height = 'auto'; 
-                paper.style.minHeight = '700px';
-                paperHeight.disabled = true;
+        // 핵심: 1:1 비율 + 좌측 자동 확장 로직
+        function updateDimensions() {
+            const size = baseSizeInput.value + 'px';
+            
+            // 1. 기본적으로 세로 길이(Height)와 최소 가로 폭(Min-Width)을 동일하게 설정 (1:1 비율)
+            paper.style.height = size;
+            paper.style.minWidth = size;
+            
+            // 2. 자동 확장 체크 여부에 따라 Width 속성 제어
+            if (autoExpandCheck.checked) {
+                // max-content: 내용이 많으면 컨테이너가 자동으로 늘어남 (세로쓰기이므로 왼쪽으로)
+                paper.style.width = 'max-content';
+                
+                // 확장 시, 글자가 테두리에 너무 딱 붙지 않도록 약간의 패딩(버퍼) 추가
+                // 기존 padding이 있지만, max-content 계산 시 여유를 주기 위함
+                // (세로쓰기에서 width 확장은 block-size 확장이므로 padding-left가 끝부분임)
             } else {
-                paper.style.height = paperHeight.value + 'px';
-                paper.style.minHeight = '';
-                paperHeight.disabled = false;
+                // 고정 모드: 너비를 높이와 똑같이 고정 (정사각형 강제)
+                paper.style.width = size;
             }
+        }
+
+        // 이벤트 리스너
+        textContent.addEventListener('input', updateText);
+        fontSize.addEventListener('input', updateStyle);
+        lineHeight.addEventListener('input', updateStyle);
+        bgColor.addEventListener('input', updateStyle);
+        
+        baseSizeInput.addEventListener('input', updateDimensions);
+        autoExpandCheck.addEventListener('change', updateDimensions);
+
+        fontSelect.addEventListener('change', (e) => {
+            paper.className = ''; 
+            paper.classList.add(e.target.value);
+            if(checkCertificate.checked) paper.classList.add('certificate-mode');
         });
 
-        fontSelect.addEventListener('change', (e) => paper.style.fontFamily = e.target.value);
-
-        certificateMode.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                paper.classList.add('certificate-mode');
-            } else {
-                paper.classList.remove('certificate-mode');
-            }
+        checkCertificate.addEventListener('change', (e) => {
+            if(e.target.checked) paper.classList.add('certificate-mode');
+            else paper.classList.remove('certificate-mode');
         });
 
-        logoImageFile.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) {
-                topLogo.style.display = 'none';
-                paper.classList.remove('has-logo'); 
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                topLogo.src = e.target.result;
-                topLogo.style.display = 'block';
-                paper.classList.add('has-logo'); 
-            };
-            reader.readAsDataURL(file);
-        });
+        // 초기 실행
+        updateText();
+        updateStyle();
 
-        customFontFile.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const fontData = e.target.result;
-                const fontName = 'CustomFont_' + Date.now();
-                const style = document.createElement('style');
-                style.textContent = `
-                    @font-face {
-                        font-family: '${fontName}';
-                        src: url('${fontData}');
-                    }
-                `;
-                document.head.appendChild(style);
-                const option = document.createElement('option');
-                option.value = fontName;
-                option.text = "📂 " + file.name;
-                fontSelect.add(option, 0);
-                fontSelect.value = fontName;
-                paper.style.fontFamily = fontName;
-                alert('폰트가 적용되었습니다!');
-            };
-            reader.readAsDataURL(file);
-        });
 
-        stampType.addEventListener('change', function() {
-            if (this.value === 'image') {
-                textStampInput.style.display = 'none';
-                imageStampInput.style.display = 'flex';
-            } else {
-                textStampInput.style.display = 'flex';
-                imageStampInput.style.display = 'none';
-            }
-        });
-
-        function addStamp() {
-            const type = stampType.value;
-            const div = document.createElement('div');
-            if (type === 'image') {
-                div.className = `stamp ${type}`; 
-            } else {
-                div.className = `stamp ${type}`;
-            }
-            div.setAttribute('tabindex', '0'); 
+        // --- 2. 도장 시스템 ---
+        function addStamp(type) {
+            const el = document.createElement('div');
+            el.className = `stamp ${type}`;
             
             const delBtn = document.createElement('div');
             delBtn.className = 'delete-btn';
-            delBtn.innerText = 'X';
-            delBtn.onclick = function(e) { e.stopPropagation(); div.remove(); };
-            div.appendChild(delBtn);
+            delBtn.innerHTML = '<i data-lucide="x" style="width:14px;"></i>';
+            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); };
+            el.appendChild(delBtn);
 
-            div.ondblclick = function(e) { e.stopPropagation(); div.remove(); };
-            
-            div.addEventListener('click', function(e) {
-                e.stopPropagation();
-                document.querySelectorAll('.stamp').forEach(s => s.style.outline = 'none');
-                div.style.outline = '2px dashed blue';
-                window.selectedStamp = div;
-            });
-
-            div.style.top = (200 + Math.random() * 50) + 'px';
-            div.style.right = (50 + Math.random() * 50) + 'px'; 
-            div.style.left = 'auto'; 
-            
             if (type === 'image') {
-                const file = stampImageFile.files[0];
-                if (!file) { alert('이미지 파일을 선택해주세요.'); return; }
+                const file = stampImageInput.files[0];
+                if (!file) { alert('이미지 파일을 먼저 선택해주세요.'); return; }
                 const img = document.createElement('img');
-                const reader = new FileReader();
-                reader.onload = function(e) { img.src = e.target.result; };
-                reader.readAsDataURL(file);
-                div.style.width = '80px';
-                div.style.height = '80px';
-                div.style.border = 'none'; 
-                div.appendChild(img);
+                img.src = URL.createObjectURL(file);
+                el.appendChild(img);
+                el.style.width = '100px'; el.style.height = '100px';
             } else {
-                const txt = stampText.value;
-                if (!txt) { alert('도장에 들어갈 이름을 입력하세요.'); return; }
-                div.style.color = stampColor.value;
-                div.style.borderColor = stampColor.value;
-                div.style.width = '60px';
-                div.style.height = '60px';
-                const span = document.createElement('span');
-                span.innerText = txt;
-                div.appendChild(span);
-                div.style.fontSize = (50 / (txt.length > 2 ? 2 : 1.5)) + 'px';
+                const txt = stampText.value || '인';
+                const color = stampColor.value;
+                const content = document.createElement('div');
+                content.className = 'stamp-content';
+                content.innerText = txt;
+                content.style.borderColor = color;
+                content.style.color = color;
+                
+                const size = txt.length > 2 ? 80 : 60;
+                el.style.width = size + 'px'; el.style.height = size + 'px';
+                el.style.fontSize = (size / 2.5) + 'px';
+                el.appendChild(content);
             }
-            paper.appendChild(div);
-            makeDraggable(div);
-            stampHistory.push(div);
+
+            // 도장 초기 위치 (우측 하단 부근)
+            el.style.bottom = '150px';
+            el.style.right = '100px'; 
             
-            window.selectedStamp = div;
-            div.style.outline = '2px dashed blue';
+            paper.appendChild(el);
+            makeDraggable(el);
+            lucide.createIcons(); 
         }
 
-        paper.addEventListener('click', function() {
-            document.querySelectorAll('.stamp').forEach(s => s.style.outline = 'none');
-            window.selectedStamp = null;
-        });
-
-        function alignStamp(position) {
-            const stamp = window.selectedStamp;
-            if (!stamp) {
-                if (stampHistory.length > 0) {
-                    const last = stampHistory[stampHistory.length-1];
-                    if (document.body.contains(last)) {
-                        alignStampTarget(last, position);
-                        return;
-                    }
-                }
-                alert('먼저 정렬할 도장을 클릭해서 선택해주세요.');
-                return;
-            }
-            alignStampTarget(stamp, position);
-        }
-
-        function alignStampTarget(stamp, position) {
-            stamp.style.right = 'auto'; 
-            stamp.style.bottom = 'auto';
-            stamp.style.left = 'auto';
-            stamp.style.top = 'auto';
-            
-            if (position === 'center') {
-                stamp.style.top = '50%';
-                stamp.style.left = '50%';
-                stamp.style.transform = 'translate(-50%, -50%)';
-            } else if (position === 'bottom-left') {
-                stamp.style.bottom = '100px'; 
-                stamp.style.left = '100px'; 
-                stamp.style.transform = 'none';
-            } else if (position === 'bottom-right') {
-                stamp.style.bottom = '100px';
-                stamp.style.right = '100px';
-                stamp.style.transform = 'none';
-            }
-        }
-        
-        undoStampBtn.addEventListener('click', function() {
-            if (stampHistory.length > 0) {
-                const lastStamp = stampHistory.pop();
-                if (lastStamp && lastStamp.parentNode) lastStamp.remove();
-            } else {
-                const stamps = document.querySelectorAll('.stamp');
-                if(stamps.length > 0) stamps[stamps.length-1].remove();
-            }
-        });
-
-        clearStampsBtn.addEventListener('click', function() {
-            const stamps = document.querySelectorAll('.stamp');
-            if(stamps.length === 0) return;
-            if(confirm('모든 도장을 지우시겠습니까?')) {
-                stamps.forEach(s => s.remove());
-                stampHistory = [];
-            }
-        });
+        stampImageInput.addEventListener('change', () => addStamp('image'));
 
         function makeDraggable(elmnt) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            elmnt.onmousedown = dragMouseDown;
-            elmnt.ontouchstart = dragMouseDown;
+            elmnt.onmousedown = dragStart; elmnt.ontouchstart = dragStart;
 
-            function dragMouseDown(e) {
-                e = e || window.event;
-                // 삭제 버튼 클릭 시 드래그 방지
-                if (e.target.className === 'delete-btn') return;
-                
+            function dragStart(e) {
+                if(e.target.closest('.delete-btn')) return;
+                document.querySelectorAll('.stamp').forEach(s => s.classList.remove('selected'));
+                elmnt.classList.add('selected'); 
+                e.preventDefault();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                pos3 = clientX;
-                pos4 = clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
-                document.ontouchend = closeDragElement;
-                document.ontouchmove = elementDrag;
+                pos3 = clientX; pos4 = clientY;
+                document.onmouseup = closeDrag; document.onmousemove = elementDrag;
+                document.ontouchend = closeDrag; document.ontouchmove = elementDrag;
             }
 
             function elementDrag(e) {
-                e = e || window.event;
+                e.preventDefault();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                pos1 = pos3 - clientX;
-                pos2 = pos4 - clientY;
-                pos3 = clientX;
-                pos4 = clientY;
-                let newTop = (elmnt.offsetTop - pos2);
-                let newLeft = (elmnt.offsetLeft - pos1);
+                pos1 = pos3 - clientX; pos2 = pos4 - clientY;
+                pos3 = clientX; pos4 = clientY;
                 
-                elmnt.style.transform = 'none';
-                
-                elmnt.style.top = newTop + "px";
-                elmnt.style.left = newLeft + "px";
-                elmnt.style.right = 'auto';
-                elmnt.style.bottom = 'auto';
+                // 상하좌우 자유 이동
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                // 기존 위치 속성 초기화
+                elmnt.style.bottom = 'auto'; elmnt.style.right = 'auto';
             }
 
-            function closeDragElement() {
-                document.onmouseup = null;
-                document.onmousemove = null;
-                document.ontouchend = null;
-                document.ontouchmove = null;
+            function closeDrag() {
+                document.onmouseup = null; document.onmousemove = null;
+                document.ontouchend = null; document.ontouchmove = null;
             }
         }
-
-        // 이미지 저장 함수 (수정됨: 안정성 확보)
-        saveBtn.addEventListener('click', function() {
-            // 도장 선택 테두리 제거
-            document.querySelectorAll('.stamp').forEach(s => s.style.outline = 'none');
-            window.selectedStamp = null;
-
-            const originalText = saveBtn.innerText;
-            saveBtn.innerText = '저장 중...';
-
-            const delBtns = document.querySelectorAll('.delete-btn');
-            delBtns.forEach(b => b.style.display = 'none'); // 삭제 버튼 숨김
-
-            // toBlob 방식 사용 (대용량 처리에 유리)
-            htmlToImage.toBlob(paper, {
-                quality: 1.0,
-                pixelRatio: 2, 
-                backgroundColor: paper.style.backgroundColor || '#f4e4bc',
-                width: paper.scrollWidth,
-                height: paper.scrollHeight,
-                // filter 기능 삭제 (직접 DOM 숨김 처리로 대체하여 오류 방지)
-            })
-            .then(function (blob) {
-                // 다운로드 트리거
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.download = '나만의_서찰.png';
-                link.href = url;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-                
-                // 복구
-                saveBtn.innerText = originalText;
-                delBtns.forEach(b => b.style.display = '');
-            })
-            .catch(function (error) {
-                console.error('이미지 저장 실패:', error);
-                alert('이미지 저장에 실패했습니다. (브라우저 보안 설정 등을 확인하세요)');
-                
-                // 최후의 수단: 새 창에 이미지 띄우기
-                htmlToImage.toPng(paper).then(function(dataUrl){
-                     const win = window.open();
-                     win.document.write('<img src="' + dataUrl + '" style="max-width:100%"/>');
-                     win.document.write('<br><b>이미지를 우클릭하여 저장하세요.</b>');
-                });
-
-                saveBtn.innerText = originalText;
-                delBtns.forEach(b => b.style.display = '');
-            });
-        });
         
-        updateText();
+        paper.addEventListener('click', (e) => {
+            if(!e.target.closest('.stamp')) {
+                document.querySelectorAll('.stamp').forEach(s => s.classList.remove('selected'));
+            }
+        });
+
+
+        // --- 3. 저장 기능 (확장된 영역 전체 캡처) ---
+        async function downloadImage() {
+            const btn = document.querySelector('.btn-primary');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> 처리 중...';
+            btn.disabled = true;
+            lucide.createIcons(); 
+
+            document.querySelectorAll('.stamp').forEach(s => s.classList.remove('selected'));
+            
+            try {
+                // html-to-image는 DOM 요소의 전체 크기(scrollWidth/Height)를 자동으로 감지합니다.
+                // 따라서 별도의 크기 지정 없이도 확장된 종이 전체가 캡처됩니다.
+                const blob = await htmlToImage.toBlob(paper, {
+                    quality: 1.0,
+                    pixelRatio: 2, 
+                    backgroundColor: window.getComputedStyle(paper).backgroundColor,
+                });
+                saveAs(blob, '세로쓰기_문서_1to1.png');
+            } catch (error) {
+                console.error('Download Failed:', error);
+                if(confirm('저장에 실패했습니다. 폰트 제외 모드로 저장하시겠습니까?')) {
+                     try {
+                        const fallbackBlob = await htmlToImage.toBlob(paper, { quality: 1.0, pixelRatio: 2, skipFonts: true });
+                        saveAs(fallbackBlob, '세로쓰기_문서_기본.png');
+                     } catch(err2) { alert('스크린샷을 이용해주세요.'); }
+                }
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+        
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`;
+        document.head.appendChild(style);
+
     </script>
 </body>
 </html>
