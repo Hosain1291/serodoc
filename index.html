@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세로쓰기 에디터 (Modern 1:1)</title>
+    <title>세로쓰기 에디터</title>
     
     <!-- 아이콘 (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -66,27 +66,19 @@
         .sidebar-content { flex: 1; overflow-y: auto; padding: 24px; }
         .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); background: #f9fafb; }
 
-        /* --- 메인 영역 (스크롤 처리 핵심) --- */
+        /* --- 메인 영역 --- */
         main {
             flex: 1;
             position: relative;
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 24px 24px;
-            overflow: auto; /* 스크롤 허용 */
+            overflow: auto;
             display: flex;
-            
-            /* 핵심: 세로쓰기 좌측 확장을 위해 RTL 방향 설정 */
-            /* 이렇게 하면 내용이 왼쪽으로 늘어날 때 스크롤바가 자연스럽게 작동합니다 */
-            direction: rtl; 
-            
+            direction: rtl; /* 세로쓰기 좌측 확장을 위한 RTL */
             padding: 40px;
         }
         
-        /* 메인 내부 컨테이너 정렬 */
-        #previewContainer {
-            margin: auto; /* 중앙 정렬 */
-            direction: ltr; /* 내부는 다시 LTR로 복구 (필요시) */
-        }
+        #previewContainer { margin: auto; direction: ltr; }
 
         /* --- 컴포넌트 UI --- */
         .control-group { margin-bottom: 24px; }
@@ -125,16 +117,12 @@
         #paper {
             background-color: #fffbf0;
             color: #111;
-            
-            /* 핵심: 세로쓰기 설정 */
             writing-mode: vertical-rl;
             text-orientation: mixed;
             
-            /* 기본 사이즈 (스크립트로 제어됨) */
-            height: 800px;     /* 세로 길이 (줄 길이) */
-            min-width: 800px;  /* 가로 너비 (줄 수, 최소 1:1 유지) */
-            /* width: max-content; -> JS에서 토글됨 */
-
+            height: 800px;     
+            min-width: 800px;
+            
             padding: 80px 60px;
             box-sizing: border-box;
             position: relative;
@@ -146,14 +134,10 @@
             white-space: pre-wrap;
             
             box-shadow: var(--shadow-lg);
-            transition: height 0.3s, min-width 0.3s; /* 부드러운 크기 변경 */
-            
-            /* 왼쪽 확장을 위한 정렬 처리 */
-            margin-left: auto; 
-            margin-right: auto;
+            transition: height 0.3s, min-width 0.3s;
+            margin-left: auto; margin-right: auto;
         }
 
-        /* 폰트 클래스 */
         #paper.font-sangjang { font-family: 'Sangjang', 'Nanum Myeongjo', serif; }
         #paper.font-dobong { font-family: 'Dobong', 'Gowun Batang', serif; }
         #paper.font-jinin { font-family: 'Jinin', serif; }
@@ -161,19 +145,51 @@
         #paper.font-song { font-family: 'Song', serif; }
         #paper.font-solmoe { font-family: 'Solmoe', serif; }
 
-        /* 상장 테두리 */
         #paper.certificate-mode {
             border: 12px double #daa520;
             outline: 2px solid #daa520;
             outline-offset: -20px;
         }
 
+        /* --- 공통 드래그 아이템 스타일 --- */
+        .draggable-item {
+            position: absolute; 
+            cursor: move; 
+            user-select: none;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .draggable-item.selected { outline: 2px dashed var(--primary); }
+        
+        /* 삭제 버튼 (공통) */
+        .delete-btn {
+            position: absolute; top: -10px; right: -10px; width: 24px; height: 24px;
+            background: #ef4444; color: white; border-radius: 50%;
+            display: none; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 14px; z-index: 100;
+        }
+        .draggable-item:hover .delete-btn, .draggable-item.selected .delete-btn { display: flex; }
+
+        /* --- 사진 (User Photo) --- */
+        .user-photo {
+            z-index: 15; /* 텍스트(0) < 사진(15) < 도장(20) */
+        }
+        .user-photo img {
+            width: 250px; /* 기본 크기 */
+            max-width: 500px;
+            height: auto;
+            pointer-events: none;
+            display: block;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* 사진 그림자 */
+            /* background: white;  <- 투명 배경을 위해 제거 */
+        }
+
         /* --- 도장 (Stamp) --- */
         .stamp {
-            position: absolute; z-index: 20; cursor: move; user-select: none;
-            display: flex; justify-content: center; align-items: center;
+            z-index: 20; 
             mix-blend-mode: multiply; 
         }
+        .stamp.selected { mix-blend-mode: normal; } /* 선택 시 잘 보이게 */
+        
         .stamp-content {
             border: 3px solid #cc0000; color: #cc0000;
             font-family: 'Jinin', 'Gowun Batang', serif; font-weight: 700;
@@ -183,19 +199,12 @@
         }
         .stamp.circle .stamp-content { border-radius: 50%; }
         .stamp img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-        .stamp.selected { outline: 2px dashed var(--primary); mix-blend-mode: normal; }
-        .delete-btn {
-            position: absolute; top: -10px; right: -10px; width: 24px; height: 24px;
-            background: #ef4444; color: white; border-radius: 50%;
-            display: none; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 14px; z-index: 30;
-        }
-        .stamp:hover .delete-btn, .stamp.selected .delete-btn { display: flex; }
+
 
         @media (max-width: 1024px) {
             body { flex-direction: column; overflow: auto; }
             aside { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
-            main { padding: 20px; min-height: 600px; direction: ltr; } /* 모바일에선 LTR로 복귀 */
+            main { padding: 20px; min-height: 600px; direction: ltr; }
             #paper { transform: scale(0.8); transform-origin: top center; margin: 0 auto; }
         }
     </style>
@@ -205,7 +214,7 @@
     <aside>
         <div class="sidebar-header">
             <i data-lucide="file-text"></i>
-            <h1>세로쓰기 에디터 (1:1)</h1>
+            <h1>세로쓰기 에디터</h1>
         </div>
         
         <div class="sidebar-content">
@@ -232,17 +241,12 @@
             <div class="control-group">
                 <label>종이 크기 (1:1 정방형)</label>
                 <div class="row">
-                    <!-- 기본값 800px -->
                     <input type="number" id="baseSizeInput" value="800" min="500" max="2000" step="50" placeholder="기본 800">
                     <label class="toggle-wrapper" style="flex: 1.4; margin-bottom: 5px;">
                         <span>좌측 자동확장</span>
                         <input type="checkbox" id="autoExpandCheck" checked>
                     </label>
                 </div>
-                <span class="desc" style="display:block; margin-top:5px;">
-                    * 기본적으로 정사각형(1:1)을 유지합니다.<br>
-                    * 내용이 넘치면 종이가 왼쪽으로 늘어납니다.
-                </span>
             </div>
 
             <!-- 3. 스타일 설정 -->
@@ -288,7 +292,14 @@
 
             <hr style="border:0; border-top:1px solid #eee; margin: 20px 0;">
 
-            <!-- 4. 도장 -->
+            <!-- 4. 사진 추가 (New) -->
+            <div class="control-group">
+                <label>사진 추가</label>
+                <span class="desc">문서 중간에 넣을 사진을 선택하세요. (글자 위에 배치됨)</span>
+                <input type="file" id="photoInput" accept="image/*">
+            </div>
+
+            <!-- 5. 도장 -->
             <div class="control-group">
                 <label>도장 추가</label>
                 <div class="row" style="margin-bottom: 8px;">
@@ -300,6 +311,7 @@
                     <button class="btn-secondary" onclick="addStamp('circle')">원형 도장</button>
                 </div>
                 <div style="margin-top: 10px;">
+                    <label style="font-size:0.8rem; margin-bottom:4px;">도장 이미지 파일</label>
                     <input type="file" id="stampImageInput" accept="image/*">
                 </div>
             </div>
@@ -317,7 +329,7 @@
         <div id="previewContainer">
             <div id="paper" class="font-sangjang">
                 <div id="paperContent"></div>
-                <!-- Stamps appended here -->
+                <!-- Stamps & Photos appended here -->
             </div>
         </div>
     </main>
@@ -325,7 +337,6 @@
     <script>
         lucide.createIcons();
 
-        // 요소 참조
         const textContent = document.getElementById('textContent');
         const paper = document.getElementById('paper');
         const paperContent = document.getElementById('paperContent');
@@ -335,51 +346,40 @@
         const fontSelect = document.getElementById('fontSelect');
         const checkCertificate = document.getElementById('checkCertificate');
         
-        // 크기 조절 요소 (변경됨)
         const baseSizeInput = document.getElementById('baseSizeInput');
         const autoExpandCheck = document.getElementById('autoExpandCheck');
 
         const stampText = document.getElementById('stampText');
         const stampColor = document.getElementById('stampColor');
         const stampImageInput = document.getElementById('stampImageInput');
+        const photoInput = document.getElementById('photoInput');
 
         // --- 1. 문서 내용 및 크기 로직 ---
         function updateText() {
             let txt = textContent.value;
             paperContent.innerText = txt;
-            updateDimensions(); // 텍스트 변경 시 크기 체크
+            updateDimensions();
         }
 
         function updateStyle() {
             paper.style.fontSize = fontSize.value + 'px';
             paper.style.lineHeight = lineHeight.value;
             paper.style.backgroundColor = bgColor.value;
-            updateDimensions(); // 스타일 변경 시 크기 체크
+            updateDimensions();
         }
         
-        // 핵심: 1:1 비율 + 좌측 자동 확장 로직
         function updateDimensions() {
             const size = baseSizeInput.value + 'px';
-            
-            // 1. 기본적으로 세로 길이(Height)와 최소 가로 폭(Min-Width)을 동일하게 설정 (1:1 비율)
             paper.style.height = size;
             paper.style.minWidth = size;
             
-            // 2. 자동 확장 체크 여부에 따라 Width 속성 제어
             if (autoExpandCheck.checked) {
-                // max-content: 내용이 많으면 컨테이너가 자동으로 늘어남 (세로쓰기이므로 왼쪽으로)
                 paper.style.width = 'max-content';
-                
-                // 확장 시, 글자가 테두리에 너무 딱 붙지 않도록 약간의 패딩(버퍼) 추가
-                // 기존 padding이 있지만, max-content 계산 시 여유를 주기 위함
-                // (세로쓰기에서 width 확장은 block-size 확장이므로 padding-left가 끝부분임)
             } else {
-                // 고정 모드: 너비를 높이와 똑같이 고정 (정사각형 강제)
                 paper.style.width = size;
             }
         }
 
-        // 이벤트 리스너
         textContent.addEventListener('input', updateText);
         fontSize.addEventListener('input', updateStyle);
         lineHeight.addEventListener('input', updateStyle);
@@ -399,15 +399,52 @@
             else paper.classList.remove('certificate-mode');
         });
 
-        // 초기 실행
         updateText();
         updateStyle();
 
 
-        // --- 2. 도장 시스템 ---
+        // --- 2. 사진 추가 로직 (New) ---
+        photoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                addPhotoElement(e.target.result);
+            };
+            reader.readAsDataURL(file);
+            this.value = ''; // 초기화
+        });
+
+        function addPhotoElement(src) {
+            const el = document.createElement('div');
+            el.className = 'draggable-item user-photo';
+            
+            const delBtn = document.createElement('div');
+            delBtn.className = 'delete-btn';
+            delBtn.innerHTML = '<i data-lucide="x" style="width:14px;"></i>';
+            delBtn.onclick = (e) => { e.stopPropagation(); el.remove(); };
+            el.appendChild(delBtn);
+
+            const img = document.createElement('img');
+            img.src = src;
+            el.appendChild(img);
+
+            // 중앙 배치
+            el.style.top = '50%';
+            el.style.left = '50%';
+            el.style.transform = 'translate(-50%, -50%)';
+
+            paper.appendChild(el);
+            makeDraggable(el);
+            lucide.createIcons();
+        }
+
+
+        // --- 3. 도장 시스템 ---
         function addStamp(type) {
             const el = document.createElement('div');
-            el.className = `stamp ${type}`;
+            el.className = `draggable-item stamp ${type}`;
             
             const delBtn = document.createElement('div');
             delBtn.className = 'delete-btn';
@@ -437,7 +474,6 @@
                 el.appendChild(content);
             }
 
-            // 도장 초기 위치 (우측 하단 부근)
             el.style.bottom = '150px';
             el.style.right = '100px'; 
             
@@ -448,18 +484,23 @@
 
         stampImageInput.addEventListener('change', () => addStamp('image'));
 
+        // 드래그 기능 (공통)
         function makeDraggable(elmnt) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             elmnt.onmousedown = dragStart; elmnt.ontouchstart = dragStart;
 
             function dragStart(e) {
                 if(e.target.closest('.delete-btn')) return;
-                document.querySelectorAll('.stamp').forEach(s => s.classList.remove('selected'));
+                
+                // 모든 드래그 아이템(사진, 도장) 선택 해제
+                document.querySelectorAll('.draggable-item').forEach(s => s.classList.remove('selected'));
                 elmnt.classList.add('selected'); 
+                
                 e.preventDefault();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
                 pos3 = clientX; pos4 = clientY;
+                
                 document.onmouseup = closeDrag; document.onmousemove = elementDrag;
                 document.ontouchend = closeDrag; document.ontouchmove = elementDrag;
             }
@@ -471,10 +512,9 @@
                 pos1 = pos3 - clientX; pos2 = pos4 - clientY;
                 pos3 = clientX; pos4 = clientY;
                 
-                // 상하좌우 자유 이동
                 elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
                 elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-                // 기존 위치 속성 초기화
+                elmnt.style.transform = 'none'; // 초기 중앙정렬 transform 제거
                 elmnt.style.bottom = 'auto'; elmnt.style.right = 'auto';
             }
 
@@ -484,14 +524,15 @@
             }
         }
         
+        // 바탕 클릭 시 선택 해제
         paper.addEventListener('click', (e) => {
-            if(!e.target.closest('.stamp')) {
-                document.querySelectorAll('.stamp').forEach(s => s.classList.remove('selected'));
+            if(!e.target.closest('.draggable-item')) {
+                document.querySelectorAll('.draggable-item').forEach(s => s.classList.remove('selected'));
             }
         });
 
 
-        // --- 3. 저장 기능 (확장된 영역 전체 캡처) ---
+        // --- 4. 저장 기능 ---
         async function downloadImage() {
             const btn = document.querySelector('.btn-primary');
             const originalText = btn.innerHTML;
@@ -499,11 +540,10 @@
             btn.disabled = true;
             lucide.createIcons(); 
 
-            document.querySelectorAll('.stamp').forEach(s => s.classList.remove('selected'));
+            // 선택 상자 제거
+            document.querySelectorAll('.draggable-item').forEach(s => s.classList.remove('selected'));
             
             try {
-                // html-to-image는 DOM 요소의 전체 크기(scrollWidth/Height)를 자동으로 감지합니다.
-                // 따라서 별도의 크기 지정 없이도 확장된 종이 전체가 캡처됩니다.
                 const blob = await htmlToImage.toBlob(paper, {
                     quality: 1.0,
                     pixelRatio: 2, 
