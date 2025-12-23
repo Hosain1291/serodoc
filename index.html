@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세로쓰기 문서 생성기</title>
+    <title>[세로쓰기 문서]</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
     <style>
         /* 기본 웹폰트 정의 */
@@ -105,7 +105,8 @@
             font-family: 'Gulim', sans-serif;
         }
 
-        input[type="text"], select, input[type="file"], input[type="range"], input[type="color"] {
+        /* 입력 필드 (숫자, 텍스트 등) 스타일 공통 */
+        input[type="text"], input[type="number"], select, input[type="file"], input[type="color"] {
             width: 100%; padding: 6px;
             background: #fff; color: #000; 
             border: 2px solid #404040;
@@ -114,6 +115,11 @@
             border-radius: 0; 
             box-sizing: border-box;
             font-family: 'Gulim', sans-serif;
+        }
+
+        /* 숫자 입력 필드 전용 스타일 */
+        input[type="number"] {
+            padding-right: 2px;
         }
 
         .checkbox-group {
@@ -214,6 +220,14 @@
             margin-bottom: -0.35em; 
         }
 
+        /* 제목(첫 줄) 강조 스타일 */
+        .title-line {
+            font-size: 1.5em; /* 1.5배 크기 */
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 0.5em; /* 제목 아래(왼쪽) 약간의 간격 */
+        }
+
         #topLogo {
             position: absolute;
             top: 25px; 
@@ -295,7 +309,7 @@
 </head>
 <body>
 
-    <h1>세로쓰기 문서 편집기</h1>
+    <h1>[세로쓰기 문서]</h1>
 
     <div class="container">
         <!-- 설정 패널 -->
@@ -304,12 +318,17 @@
             <div class="section-title">1. 글쓰기 & 폰트</div>
             <div class="control-group">
                 <textarea id="textInput" placeholder="이곳에 내용을 입력하세요. 오른쪽 종이에 세로로 나타납니다.">
-어느 음울하고 쓸쓸한 밤, 내가 잔뜩 지친 채로 생각에 잠겨,
-사람들이 잊은 전설들이 담긴 진기하고 흥미로운 책을 읽고 있던 중에,
-그만 졸다가 고개를 끄덕일 때쯤, 갑자기 두드리는 소리가 들려왔다.
-누군가 부드럽게 두드리는, 내 방문을 두드리는 소리가.
-"아마 방문객인가 보군," 나는 중얼거렸다. "지금 내 방문을 두드리는 이는—
-단지 그것뿐이야.</textarea>
+상 장
+
+성명: 홍길동
+부문: 세로쓰기
+
+위 사람은 세로쓰기 기능을
+훌륭하게 활용하였기에
+이 상장을 수여합니다.
+
+2024년 5월 20일
+개발자 드림</textarea>
             </div>
 
             <div class="control-group">
@@ -330,11 +349,17 @@
             </div>
 
             <div class="control-group">
-                <label>크기 / 줄 간격:</label>
+                <label>글자 설정 (크기px / 줄간격):</label>
                 <div style="display:flex; gap:5px;">
-                    <input type="range" id="fontSize" min="16" max="60" value="28" style="flex:1">
-                    <input type="range" id="lineHeight" min="10" max="30" value="18" style="flex:1">
+                    <input type="number" id="fontSize" value="28" min="10" max="100" placeholder="크기(px)" title="글자 크기 (px)">
+                    <input type="number" id="lineHeight" value="1.8" min="1.0" max="5.0" step="0.1" placeholder="줄간격" title="줄 간격 (배수)">
                 </div>
+            </div>
+            
+            <!-- 첫 줄 제목 강조 옵션 추가 -->
+            <div class="checkbox-group">
+                <input type="checkbox" id="firstLineBig" checked>
+                <label for="firstLineBig">첫 줄 크게 (제목)</label>
             </div>
             
             <div class="control-group">
@@ -361,8 +386,8 @@
             </div>
             
             <div class="control-group">
-                <label>문서 길이:</label>
-                <input type="range" id="paperHeight" min="400" max="1500" value="700">
+                <!-- 라벨 텍스트 삭제 및 placeholder로 대체 -->
+                <input type="number" id="paperHeight" value="700" min="400" max="3000" step="10" placeholder="문서 길이 (px)" title="문서 길이 조절">
             </div>
 
             <div class="checkbox-group">
@@ -432,6 +457,7 @@
         const lineHeight = document.getElementById('lineHeight');
         const paperHeight = document.getElementById('paperHeight');
         const autoHeightCheck = document.getElementById('autoHeightCheck');
+        const firstLineBig = document.getElementById('firstLineBig'); // 첫 줄 강조 체크박스
         const fontSelect = document.getElementById('fontSelect');
         const customFontFile = document.getElementById('customFontFile');
         const textColor = document.getElementById('textColor');
@@ -461,14 +487,26 @@
 
             val = val.replace(/([．，！？])/g, '<span class="punct">$1</span>');
 
-            contentArea.innerHTML = val.replace(/\n/g, '<br>');
+            // 줄 단위 분리
+            let lines = val.split('\n');
+            
+            // 첫 줄 강조 로직
+            if (firstLineBig.checked && lines.length > 0 && lines[0].trim() !== '') {
+                lines[0] = `<span class="title-line">${lines[0]}</span>`;
+            }
+
+            // 다시 합치기
+            contentArea.innerHTML = lines.join('<br>');
         }
 
         textInput.addEventListener('input', updateText);
+        firstLineBig.addEventListener('change', updateText); // 체크박스 변경 시 업데이트
 
         bgColor.addEventListener('input', (e) => paper.style.backgroundColor = e.target.value);
+        
         fontSize.addEventListener('input', (e) => paper.style.fontSize = e.target.value + 'px');
-        lineHeight.addEventListener('input', (e) => paper.style.lineHeight = e.target.value / 10);
+        lineHeight.addEventListener('input', (e) => paper.style.lineHeight = e.target.value);
+        
         textColor.addEventListener('input', (e) => paper.style.color = e.target.value);
         
         paperHeight.addEventListener('input', (e) => {
@@ -643,12 +681,10 @@
                 stamp.style.left = '50%';
                 stamp.style.transform = 'translate(-50%, -50%)';
             } else if (position === 'bottom-left') {
-                // 왼쪽 하단 (서명란, 세로쓰기의 끝)
                 stamp.style.bottom = '100px'; 
                 stamp.style.left = '100px'; 
                 stamp.style.transform = 'none';
             } else if (position === 'bottom-right') {
-                // 오른쪽 하단 (사용자 요청)
                 stamp.style.bottom = '100px';
                 stamp.style.right = '100px';
                 stamp.style.transform = 'none';
@@ -758,4 +794,3 @@
     </script>
 </body>
 </html>
-
