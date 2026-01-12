@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세로쓰기 에디터</title>
+    <title>세로쓰기 에디터 (Modern 1:1)</title>
     
     <!-- 아이콘 (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -25,6 +25,7 @@
         @font-face { font-family: 'Gaehangro'; src: url('Gaehangro-H.woff') format('woff'); }
         @font-face { font-family: 'Song'; src: url('Song-B.woff') format('woff'); }
         @font-face { font-family: 'Solmoe'; src: url('SolmoeKimDaeGeonhan-Medium.woff') format('woff'); }
+        @font-face { font-family: 'Griun'; src: url('Griun_PolSensibility-Rg.woff') format('woff'); }
 
         /* --- 2. 기본 스타일 --- */
         :root {
@@ -144,6 +145,7 @@
         #paper.font-gaehangro { font-family: 'Gaehangro', serif; }
         #paper.font-song { font-family: 'Song', serif; }
         #paper.font-solmoe { font-family: 'Solmoe', serif; }
+        #paper.font-griun { font-family: 'Griun', serif; }
 
         #paper.certificate-mode {
             border: 12px double #daa520;
@@ -212,7 +214,7 @@
     <aside>
         <div class="sidebar-header">
             <i data-lucide="file-text"></i>
-            <h1>세로쓰기 에디터</h1>
+            <h1>세로쓰기 에디터 (1:1)</h1>
         </div>
         
         <div class="sidebar-content">
@@ -220,9 +222,19 @@
             <div class="control-group">
                 <label>문서 내용</label>
                 <textarea id="textContent">
-나는 지금부터 우리가 기록해야 할 역사는 활기찬 창조의 
-새 역사이어야 하며, 민족의 자주성에 입각한 영광의 역사
-이어야 한다고 굳게 믿는바 입니다.</textarea>
+상 장
+
+성명: 홍 길 동
+부문: 세로쓰기
+
+위 사람은 1:1 정방형 비율에서
+시작하여, 글이 길어지면
+좌측으로 종이를 확장하는
+혁신적인 레이아웃을 구현했기에
+이 상장을 수여합니다.
+
+2024년 5월 20일
+개발자 드림</textarea>
             </div>
 
             <!-- 2. 크기 설정 -->
@@ -247,6 +259,7 @@
                     <option value="font-dobong">도봉옛길</option>
                     <option value="font-gaehangro">개항로</option>
                     <option value="font-song">송글씨</option>
+                    <option value="font-griun">그리운 폴센시</option>
                     <option value="">고운 바탕 (기본)</option>
                 </select>
             </div>
@@ -622,4 +635,3 @@
     </script>
 </body>
 </html>
-
